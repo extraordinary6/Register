@@ -1,21 +1,24 @@
 // ============================================================================
-// RegPulse Auto-Generated APB4 Wrapper
-// Module   : chip_regs_apb_wrapper
-// Generated: 2026-04-05 14:59:55
+// RegPulse Auto-Generated AHB-Lite Wrapper
+// Module   : chip_regs_ahb_wrapper
+// Generated: 2026-04-05 15:01:35
 // ============================================================================
-module chip_regs_apb_wrapper (
-    // APB4 Interface
-    input  wire        pclk,
-    input  wire        presetn,
-    input  wire [31:0] paddr,
-    input  wire        psel,
-    input  wire        penable,
-    input  wire        pwrite,
-    input  wire [31:0] pwdata,
-    input  wire [3:0]  pstrb,
-    output wire [31:0] prdata,
-    output wire        pready,
-    output wire        pslverr,
+module chip_regs_ahb_wrapper (
+    // AHB-Lite Interface
+    input  wire                        hclk,
+    input  wire                        hresetn,
+    input  wire [31:0]                 haddr,
+    input  wire [31:0] hwdata,
+    output wire [31:0] hrdata,
+    input  wire                        hwrite,
+    input  wire                        hsel,
+    input  wire [1:0]                  htrans,
+    input  wire [2:0]                  hburst,
+    input  wire [2:0]                  hsize,
+    input  wire [3:0] hwstrb,
+    input  wire                        hready,
+    output wire                        hreadyout,
+    output wire [1:0]                  hresp,
     // Hardware Interface
     output wire [0:0] ctrl_en_q,
     output wire [3:1] ctrl_mode_q,
@@ -43,34 +46,39 @@ module chip_regs_apb_wrapper (
     wire        core_ready;
 
     // ========================================================================
+    // AHB-Lite transaction decode
+    // ========================================================================
+    wire txn_valid = hsel && (htrans == 2'b10 || htrans == 2'b11);
+
+    // ========================================================================
     // Read stall state
     // ========================================================================
     reg read_pending;
 
-    always @(posedge pclk or negedge presetn) begin
-        if (!presetn) begin
+    always @(posedge hclk or negedge hresetn) begin
+        if (!hresetn) begin
             read_pending <= 1'b0;
         end else begin
             if (read_pending && core_ready) begin
                 read_pending <= 1'b0;
-            end else if (psel && penable && !pwrite && !read_pending) begin
+            end else if (txn_valid && !hwrite && !read_pending) begin
                 read_pending <= 1'b1;
             end
         end
     end
 
     // ========================================================================
-    // APB ¡ú Core interface mapping
+    // AHB -> Core interface mapping
     // ========================================================================
-    assign core_addr  = paddr[4:2];
-    assign core_wdata = pwdata[31:0];
-    assign core_wstrb = pstrb[3:0];
-    assign core_wen   = psel && penable && pwrite && !read_pending;
-    assign core_ren   = psel && penable && !pwrite && !read_pending;
-    assign pready     = (psel && penable && pwrite && !read_pending) ||
+    assign core_addr  = haddr[4:2];
+    assign core_wdata = hwdata;
+    assign core_wstrb = hwstrb;
+    assign core_wen   = txn_valid && hwrite && !read_pending;
+    assign core_ren   = txn_valid && !hwrite && !read_pending;
+    assign hrdata     = core_rdata;
+    assign hreadyout  = (txn_valid && hwrite && !read_pending) ||
                         (read_pending && core_ready);
-    assign prdata     = core_rdata;
-    assign pslverr    = 1'b0;
+    assign hresp      = 2'b00;
 
     // ========================================================================
     // Core instance
@@ -79,8 +87,8 @@ module chip_regs_apb_wrapper (
         .AW(3),
         .DW(32)
     ) u_regfile_core (
-        .clk        (pclk),
-        .rst_n      (presetn),
+        .clk        (hclk),
+        .rst_n      (hresetn),
         .addr       (core_addr),
         .wdata      (core_wdata),
         .wen        (core_wen),

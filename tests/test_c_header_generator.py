@@ -58,3 +58,24 @@ def test_include_guard(sample_bank):
 
     assert "#ifndef TEST_TOP_H" in code
     assert "#endif /* TEST_TOP_H */" in code
+
+
+def test_64bit_uses_uint64():
+    """64-bit data width should use uint64_t in SET macro."""
+    from src.models.field import Field
+    from src.models.register import Register
+    from src.models.register_bank import RegisterBank
+
+    bank = RegisterBank("wide", data_width=64)
+    reg = Register("REG", 0x00, data_width=64)
+    reg.add_field(Field("F", "7:0", "RW", 0))
+    bank.add_register(reg)
+
+    gen = CHeaderGenerator(bank)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = gen.generate(tmpdir)
+        with open(path) as f:
+            code = f.read()
+
+    assert "uint64_t" in code
+    assert "uint32_t" not in code

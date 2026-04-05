@@ -46,7 +46,7 @@ class {{ block_name }}_reg_block extends uvm_reg_block;
         this.default_map = map;
         this.default_map.set_base_addr('h0);
 {% for reg in registers %}
-        this.default_map.add_reg({{ reg.name }}, 32'h{{ "%03X" | format(reg.offset) }}, "{{ reg.effective_access }}");
+        this.default_map.add_reg({{ reg.name }}, {{ data_width }}'h{{ "%03X" | format(reg.offset) }}, "{{ reg.effective_access }}");
 {% endfor %}
     endfunction
 
@@ -70,7 +70,7 @@ class {{ block_name }}_{{ reg.name }}_reg extends uvm_reg;
 {% endfor %}
 
     function new(string name = "{{ reg.name }}");
-        super.new(name, 32, UVM_NO_COVERAGE);
+        super.new(name, {{ data_width }}, UVM_NO_COVERAGE);
     endfunction
 
     virtual function void build();

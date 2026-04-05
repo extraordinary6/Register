@@ -11,8 +11,11 @@ from src.models.register_bank import RegisterBank
 class CHeaderGenerator:
     """Generate a C header (.h) with register offsets and field masks."""
 
+    _INT_TYPE = {8: "uint8_t", 16: "uint16_t", 32: "uint32_t", 64: "uint64_t"}
+
     def __init__(self, bank: RegisterBank):
         self.bank = bank
+        self._c_int = self._INT_TYPE.get(bank.data_width, "uint32_t")
 
     def generate(self, output_dir: str) -> str:
         guard = f"{self.bank.name.upper()}_H"
@@ -57,10 +60,11 @@ class CHeaderGenerator:
             for field in reg.fields:
                 prefix = self._macro(f"{reg.name}_{field.name}")
                 mask = ((1 << field.width) - 1) << field.lsb
-                lines.append(f"#define {prefix}_MASK   (0x{mask:08X}U)")
+                hex_fmt = "016X" if self.bank.data_width == 64 else "08X"
+                lines.append(f"#define {prefix}_MASK   (0x{mask:{hex_fmt}}U)")
                 lines.append(f"#define {prefix}_LSB    ({field.lsb}U)")
                 lines.append(f"#define {prefix}_WIDTH  ({field.width}U)")
-                lines.append(f"#define {prefix}_RESET  (0x{field.reset_val:08X}U)")
+                lines.append(f"#define {prefix}_RESET  (0x{field.reset_val:{hex_fmt}}U)")
             lines.append(f"")
 
         # Access macros
@@ -69,11 +73,12 @@ class CHeaderGenerator:
             for field in reg.fields:
                 prefix = self._macro(f"{reg.name}_{field.name}")
                 mask = ((1 << field.width) - 1) << field.lsb
+                hex_fmt = "016X" if self.bank.data_width == 64 else "08X"
                 lines.append(f"#define {prefix}_GET(regval) "
-                             f"(((regval) & 0x{mask:08X}U) >> {field.lsb}U)")
+                             f"(((regval) & 0x{mask:{hex_fmt}}U) >> {field.lsb}U)")
                 lines.append(f"#define {prefix}_SET(regval, val) "
-                             f"(((regval) & ~0x{mask:08X}U) | "
-                             f"(((uint32_t)(val) << {field.lsb}U) & 0x{mask:08X}U))")
+                             f"(((regval) & ~0x{mask:{hex_fmt}}U) | "
+                             f"((({self._c_int})(val) << {field.lsb}U) & 0x{mask:{hex_fmt}}U))")
             lines.append(f"")
 
         lines.append(f"#endif /* {guard} */")

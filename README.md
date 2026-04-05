@@ -6,15 +6,16 @@ EDA tool to generate bus-agnostic register file cores, optional bus protocol wra
 
 - **Excel-driven workflow** — define registers in `.xlsx`, get RTL and verification IP automatically
 - **Bus-agnostic register core** — synthesizable Verilog with generic `clk/rst_n/addr/wdata/wen/wstrb/ren/rdata/ready` interface
-- **Optional APB4 wrapper** — `--bus apb` generates a protocol bridge that instantiates the core
+- **3 bus protocol wrappers** — APB4, AHB-Lite, AXI4-Lite bridges that instantiate the core
 - **Parameterized width** — `AW` (address width) and `DW` (data width) as Verilog parameters, supports 8/16/32/64-bit
 - **Byte-strobe masking** — per-field `wstrb` gating for sub-word writes
-- **UVM RAL model** — complete `uvm_reg_block` with backdoor path mapping
+- **UVM RAL model** — complete `uvm_reg_block` with backdoor path mapping, data-width aware
 - **Multi-format output** — Verilog, SystemVerilog, C header, JSON, Markdown, HTML
-- **Built-in validation** — 8 automated checks (address overlap, bit collision, name uniqueness, etc.)
+- **Built-in validation** — 9 automated checks (address overlap, bit collision, name uniqueness, etc.)
 - **8 access types** — RW, RO, WO, W1C, W1S, W0C, RC, RS with correct hardware semantics
 - **Hardware sideband interface** — `input` (hw → reg) and `output` (reg → hw) port generation
 - **Interrupt aggregation** — automatic source/enable pair matching with `irq_o` output
+- **Numeric cell tolerance** — handles Excel float-formatted numeric cells (e.g. `1.0` → `1`)
 
 ## Quick Start
 
@@ -28,6 +29,12 @@ python -m src.cli --input_excel spec.xlsx --output_dir ./output
 # Generate with APB4 bus wrapper
 python -m src.cli --input_excel spec.xlsx --output_dir ./output --bus apb
 
+# Generate with AHB-Lite bus wrapper
+python -m src.cli --input_excel spec.xlsx --output_dir ./output --bus ahb
+
+# Generate with AXI4-Lite bus wrapper
+python -m src.cli --input_excel spec.xlsx --output_dir ./output --bus axi
+
 # Generate only RTL
 python -m src.cli --input_excel spec.xlsx --output_dir ./output --rtl_only
 
@@ -38,14 +45,14 @@ python -m src.cli --input_excel spec.xlsx --output_dir ./output --format rtl,uvm
 python -m src.cli --input_excel template.xlsx --output_dir ./output --template_excel
 ```
 
-## Architecture (v0.4.0)
+## Architecture (v0.5.0)
 
 RegPulse decouples register logic from bus protocol into two layers:
 
 ```
 ┌──────────────────────────────────┐
-│       chip_regs_apb_wrapper      │  ← APB4 → generic interface bridge
-│  (pclk, paddr, psel, pwrite, …)  │
+│   chip_regs_{apb,ahb,axi}_wrapper│  ← Bus protocol → generic interface bridge
+│  (bus-specific: pclk/hclk/aclk…) │
 ├──────────────────────────────────┤
 │      chip_regs_regfile_core      │  ← Bus-agnostic register file
 │  (clk, rst_n, addr, wdata, wen,  │
@@ -54,7 +61,15 @@ RegPulse decouples register logic from bus protocol into two layers:
 ```
 
 - **regfile_core** — always generated, contains all register logic, HW sideband, interrupts
-- **apb_wrapper** — optional (`--bus apb`), translates APB4 protocol to the generic core interface
+- **bus_wrapper** — optional (`--bus apb|ahb|axi`), translates bus protocol to the generic core interface
+
+### Supported Bus Protocols
+
+| Bus | Option | Interface |
+|-----|--------|-----------|
+| APB4 | `--bus apb` | `pclk, presetn, paddr, psel, penable, pwrite, pwdata, pstrb, prdata, pready, pslverr` |
+| AHB-Lite | `--bus ahb` | `hclk, hresetn, haddr, hsel, htrans, hwrite, hwdata, hwstrb, hrdata, hready, hreadyout, hresp` |
+| AXI4-Lite | `--bus axi` | `aclk, aresetn, awaddr/awvalid/awready, wdata/wstrb/wvalid/wready, bvalid/bready/bresp, araddr/arvalid/arready, rdata/rvalid/rready/rresp` |
 
 ### Register Core Interface Timing
 
@@ -85,6 +100,8 @@ Optional columns: `Hardware Trigger` (`input`/`output`), `Side Effect`, `Interru
 |------|--------|-------------|
 | `{name}_regfile_core.v` | Verilog | Bus-agnostic register file core (always generated) |
 | `{name}_apb_wrapper.v` | Verilog | APB4 protocol wrapper (`--bus apb`) |
+| `{name}_ahb_wrapper.v` | Verilog | AHB-Lite protocol wrapper (`--bus ahb`) |
+| `{name}_axi_wrapper.v` | Verilog | AXI4-Lite protocol wrapper (`--bus axi`) |
 | `{name}_reg_block.sv` | SystemVerilog | UVM RAL model |
 | `{name}.h` | C header | Register definitions and access macros |
 | `{name}.json` | JSON | Machine-readable register map |
@@ -114,7 +131,7 @@ Optional:
   --block_name NAME      Module/block name (default: reg_top)
   --base_address ADDR    Base address, e.g. 0x8000_0000 (default: 0x0)
   --data_width N         Data width: 8, 16, 32, or 64 (default: 32)
-  --bus {none,apb}       Bus protocol wrapper (default: none)
+  --bus {none,apb,ahb,axi}  Bus protocol wrapper (default: none)
   --format FMTS          Comma-separated formats: rtl,uvm,c_header,json,html,markdown
   --rtl_only             Shorthand for --format rtl
   --uvm_only             Shorthand for --format uvm
@@ -131,11 +148,11 @@ Register/
 ├── src/
 │   ├── models/          # Field, Register, RegisterBank data models
 │   ├── parser/          # Excel parser (xlsx → RegisterBank)
-│   ├── validators/      # 8 validation checks
-│   ├── generators/      # RTL, APB wrapper, UVM, C header, JSON, Markdown, HTML
+│   ├── validators/      # 9 validation checks
+│   ├── generators/      # RTL, APB/AHB/AXI wrappers, UVM, C header, JSON, Markdown, HTML
 │   ├── templates/       # Jinja2 templates (regfile_core.v.j2, apb_wrapper.v.j2, etc.)
 │   └── cli.py           # Command-line interface
-├── tests/               # Test suite (pytest, 66 tests)
+├── tests/               # Test suite (pytest, 88 tests)
 ├── output/              # Example generated output (chip_regs)
 └── pyproject.toml
 ```

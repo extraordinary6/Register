@@ -174,3 +174,28 @@ def test_write_no_stall():
     assert "core_wen   = psel && penable && pwrite && !read_pending" in code
     # pready includes immediate write path
     assert "psel && penable && pwrite && !read_pending" in code
+
+
+def test_apb_data_width_64():
+    """APB wrapper with 64-bit data width should use correct signal widths."""
+    from src.models.field import Field
+    from src.models.register import Register
+    from src.models.register_bank import RegisterBank
+
+    bank = RegisterBank("test_top", data_width=64)
+    reg = Register("CTRL", 0x00, data_width=64)
+    reg.add_field(Field("F", "7:0", "RW", 0))
+    bank.add_register(reg)
+
+    gen = ApbWrapperGenerator(bank)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = gen.generate(tmpdir)
+        with open(path) as f:
+            code = f.read()
+
+    assert "input  wire [63:0] pwdata," in code
+    assert "input  wire [7:0]  pstrb," in code
+    assert "output wire [63:0] prdata," in code
+    # Address shift should use :3 (log2(8)) for 64-bit, not :2
+    assert ":3]" in code
+    assert ":2]" not in code

@@ -1,4 +1,4 @@
-"""APB Wrapper Generator — produces APB4-to-regfile-core bridge Verilog."""
+"""AXI4-Lite Wrapper Generator — produces AXI4-Lite-to-regfile-core bridge Verilog."""
 
 from __future__ import annotations
 
@@ -11,12 +11,11 @@ from src.models.register_bank import RegisterBank
 
 
 def _log2(n: int) -> int:
-    """Return ceil(log2(n)) for positive *n*."""
     return (n - 1).bit_length()
 
 
-class ApbWrapperGenerator:
-    """Generate an APB4 wrapper Verilog module from a RegisterBank."""
+class AxiWrapperGenerator:
+    """Generate an AXI4-Lite wrapper Verilog module from a RegisterBank."""
 
     def __init__(self, bank: RegisterBank, template_dir: str | None = None):
         self.bank = bank
@@ -30,17 +29,14 @@ class ApbWrapperGenerator:
         )
 
     def generate(self, output_dir: str) -> str:
-        """Render the Verilog and write to <output_dir>/<module_name>_apb_wrapper.v.
-
-        Returns the path of the generated file.
-        """
-        template = self.env.get_template("apb_wrapper.v.j2")
+        template = self.env.get_template("axi_wrapper.v.j2")
 
         dw = self.bank.data_width
         byte_width = dw // 8
         strb_width = byte_width
         num_words = self.bank.address_space // byte_width
         addr_width = max(1, (num_words - 1).bit_length()) if num_words > 0 else 1
+        byte_addr_lsb = _log2(byte_width)
 
         code = template.render(
             module_name=self.bank.name,
@@ -49,12 +45,12 @@ class ApbWrapperGenerator:
             byte_width=byte_width,
             strb_width=strb_width,
             addr_width=addr_width,
-            byte_addr_lsb=_log2(byte_width),
+            byte_addr_lsb=byte_addr_lsb,
             interrupt_pairs=self.bank.interrupt_pairs,
             timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         )
 
-        out_path = os.path.join(output_dir, f"{self.bank.name}_apb_wrapper.v")
+        out_path = os.path.join(output_dir, f"{self.bank.name}_axi_wrapper.v")
         with open(out_path, "w") as fh:
             fh.write(code)
         return out_path

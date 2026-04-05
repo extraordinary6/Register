@@ -34,6 +34,7 @@ class UvmGenerator:
         code = template.render(
             block_name=self.bank.name,
             registers=self.bank.registers,
+            data_width=self.bank.data_width,
             timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         )
 

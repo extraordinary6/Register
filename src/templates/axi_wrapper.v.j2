@@ -1,0 +1,165 @@
+// ============================================================================
+// RegPulse Auto-Generated AXI4-Lite Wrapper
+// Module   : {{ module_name }}_axi_wrapper
+// Generated: {{ timestamp }}
+// ============================================================================
+module {{ module_name }}_axi_wrapper (
+    // AXI4-Lite Global
+    input  wire                        aclk,
+    input  wire                        aresetn,
+
+    // AXI4-Lite Write Address Channel
+    input  wire                        awvalid,
+    output wire                        awready,
+    input  wire [31:0]                 awaddr,
+
+    // AXI4-Lite Write Data Channel
+    input  wire                        wvalid,
+    output wire                        wready,
+    input  wire [{{ data_width - 1 }}:0] wdata,
+    input  wire [{{ strb_width - 1 }}:0] wstrb,
+
+    // AXI4-Lite Write Response Channel
+    output wire                        bvalid,
+    input  wire                        bready,
+    output wire [1:0]                  bresp,
+
+    // AXI4-Lite Read Address Channel
+    input  wire                        arvalid,
+    output wire                        arready,
+    input  wire [31:0]                 araddr,
+
+    // AXI4-Lite Read Data Channel
+    output wire                        rvalid,
+    input  wire                        rready,
+    output wire [{{ data_width - 1 }}:0] rdata,
+    output wire [1:0]                  rresp{% set _has_hw = namespace(val=false) %}{% for _r in registers %}{% for _f in _r.fields %}{% if _f.hardware_interface %}{% set _has_hw.val = true %}{% endif %}{% endfor %}{% endfor %}{% if _has_hw.val %},
+    // Hardware Interface
+{% set _hw_ports = [] %}{% for reg in registers %}{% for field in reg.fields %}{% if field.hardware_interface == "output" %}{% if _hw_ports.append("output wire [" + (field.msb|string) + ":" + (field.lsb|string) + "] " + reg.name|lower + "_" + field.name|lower + "_q") %}{% endif %}{% endif %}{% if field.hardware_interface == "input" %}{% if _hw_ports.append("input  wire [" + (field.msb|string) + ":" + (field.lsb|string) + "] " + reg.name|lower + "_" + field.name|lower + "_st") %}{% endif %}{% endif %}{% endfor %}{% endfor %}
+{% for _port in _hw_ports %}    {{ _port }}{{ "," if not loop.last else "" }}
+{% endfor %}{% endif %}
+{% set _has_irq = namespace(val=false) %}{% if interrupt_pairs %}{% set _has_irq.val = true %}{% endif %}{% if _has_irq.val %},
+    // Interrupt
+    output wire        irq_o
+{% endif %}
+);
+
+    // ========================================================================
+    // Internal signals
+    // ========================================================================
+    wire [{{ addr_width }}-1:0] core_addr;
+    wire [{{ data_width }}-1:0] core_wdata;
+    wire        core_wen;
+    wire [{{ strb_width }}-1:0] core_wstrb;
+    wire        core_ren;
+    wire [{{ data_width }}-1:0] core_rdata;
+    wire        core_ready;
+
+    // ========================================================================
+    // Write Address Channel
+    // ========================================================================
+    reg  awaddr_sel;
+    wire awaddr_done = awvalid && awready;
+    assign awready = awvalid && !awaddr_sel;
+
+    always @(posedge aclk or negedge aresetn) begin
+        if (!aresetn)
+            awaddr_sel <= 1'b0;
+        else if (awaddr_done)
+            awaddr_sel <= 1'b1;
+        else if (core_wen)
+            awaddr_sel <= 1'b0;
+    end
+
+    // ========================================================================
+    // Write Data Channel — accept W when AW is captured and data valid
+    // ========================================================================
+    reg wdata_sel;
+    wire wdata_done = wvalid && wready;
+    assign wready = wvalid && awaddr_sel && !wdata_sel;
+
+    always @(posedge aclk or negedge aresetn) begin
+        if (!aresetn)
+            wdata_sel <= 1'b0;
+        else if (wdata_done)
+            wdata_sel <= 1'b1;
+        else if (core_wen)
+            wdata_sel <= 1'b0;
+    end
+
+    // ========================================================================
+    // Write Response Channel
+    // ========================================================================
+    reg bvalid_reg;
+    assign bvalid = bvalid_reg;
+    assign bresp  = 2'b00;
+
+    always @(posedge aclk or negedge aresetn) begin
+        if (!aresetn)
+            bvalid_reg <= 1'b0;
+        else if (core_wen && bvalid_reg == 1'b0)
+            bvalid_reg <= 1'b1;
+        else if (bvalid && bready)
+            bvalid_reg <= 1'b0;
+    end
+
+    // ========================================================================
+    // Read Address Channel
+    // ========================================================================
+    reg ar_sel;
+    wire ar_done = arvalid && arready;
+    assign arready = arvalid && !ar_sel;
+
+    always @(posedge aclk or negedge aresetn) begin
+        if (!aresetn)
+            ar_sel <= 1'b0;
+        else if (ar_done)
+            ar_sel <= 1'b1;
+        else if (core_ren)
+            ar_sel <= 1'b0;
+    end
+
+    // ========================================================================
+    // Read Data Channel
+    // ========================================================================
+    reg rvalid_reg;
+    reg [{{ data_width - 1 }}:0] rdata_reg;
+    assign rvalid = rvalid_reg;
+    assign rdata  = rdata_reg;
+    assign rresp  = 2'b00;
+
+    always @(posedge aclk or negedge aresetn) begin
+        if (!aresetn) begin
+            rvalid_reg <= 1'b0;
+        end else begin
+            if (ar_sel && core_ready && !rvalid_reg) begin
+                rvalid_reg <= 1'b1;
+                rdata_reg  <= core_rdata;
+            end else if (rvalid && rready) begin
+                rvalid_reg <= 1'b0;
+            end
+        end
+    end
+
+    // ========================================================================
+    // AXI -> Core interface mapping
+    // ========================================================================
+    assign core_addr  = awaddr[{{ addr_width + byte_addr_lsb - 1 }}:{{ byte_addr_lsb }}];
+    assign core_wdata = wdata;
+    assign core_wstrb = wstrb;
+    assign core_wen   = awaddr_sel && wdata_sel;
+    assign core_ren   = ar_sel;
+
+    // ========================================================================
+    // Core instance
+    // ========================================================================
+{% set _core_conns = [] %}{% if _core_conns.append("        .clk        (aclk)") %}{% endif %}{% if _core_conns.append("        .rst_n      (aresetn)") %}{% endif %}{% if _core_conns.append("        .addr       (core_addr)") %}{% endif %}{% if _core_conns.append("        .wdata      (core_wdata)") %}{% endif %}{% if _core_conns.append("        .wen        (core_wen)") %}{% endif %}{% if _core_conns.append("        .wstrb      (core_wstrb)") %}{% endif %}{% if _core_conns.append("        .ren        (core_ren)") %}{% endif %}{% if _core_conns.append("        .rdata      (core_rdata)") %}{% endif %}{% if _core_conns.append("        .ready      (core_ready)") %}{% endif %}{% for reg in registers %}{% for field in reg.fields %}{% if field.hardware_interface == "output" %}{% if _core_conns.append("        ." + reg.name|lower + "_" + field.name|lower + "_q (" + reg.name|lower + "_" + field.name|lower + "_q)") %}{% endif %}{% endif %}{% if field.hardware_interface == "input" %}{% if _core_conns.append("        ." + reg.name|lower + "_" + field.name|lower + "_st (" + reg.name|lower + "_" + field.name|lower + "_st)") %}{% endif %}{% endif %}{% endfor %}{% endfor %}{% if _has_irq.val %}{% if _core_conns.append("        .irq_o      (irq_o)") %}{% endif %}{% endif %}
+    {{ module_name }}_regfile_core #(
+        .AW({{ addr_width }}),
+        .DW({{ data_width }})
+    ) u_regfile_core (
+{% for _conn in _core_conns %}{{ _conn }}{{ "," if not loop.last else "" }}
+{% endfor %}
+    );
+
+endmodule

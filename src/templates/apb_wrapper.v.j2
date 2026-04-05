@@ -11,9 +11,9 @@ module {{ module_name }}_apb_wrapper (
     input  wire        psel,
     input  wire        penable,
     input  wire        pwrite,
-    input  wire [31:0] pwdata,
-    input  wire [3:0]  pstrb,
-    output wire [31:0] prdata,
+    input  wire [{{ data_width - 1 }}:0] pwdata,
+    input  wire [{{ strb_width - 1 }}:0]  pstrb,
+    output wire [{{ data_width - 1 }}:0] prdata,
     output wire        pready,
     output wire        pslverr{% set _has_hw = namespace(val=false) %}{% for _r in registers %}{% for _f in _r.fields %}{% if _f.hardware_interface %}{% set _has_hw.val = true %}{% endif %}{% endfor %}{% endfor %}{% if _has_hw.val %},
     // Hardware Interface
@@ -57,7 +57,7 @@ module {{ module_name }}_apb_wrapper (
     // ========================================================================
     // APB → Core interface mapping
     // ========================================================================
-    assign core_addr  = paddr[{{ addr_width + 1 }}:2];
+    assign core_addr  = paddr[{{ addr_width + byte_addr_lsb - 1 }}:{{ byte_addr_lsb }}];
     assign core_wdata = pwdata[{{ data_width - 1 }}:0];
     assign core_wstrb = pstrb[{{ strb_width - 1 }}:0];
     assign core_wen   = psel && penable && pwrite && !read_pending;

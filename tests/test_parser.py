@@ -99,3 +99,26 @@ def sample_excel_with_irq(tmp_path):
     df = pd.DataFrame(data)
     df.to_excel(xlsx_path, index=False)
     return str(xlsx_path)
+
+
+def test_parse_float_numeric_strings():
+    """Excel cells stored as float (e.g. '1.0', '3.0:1.0') should parse."""
+    import pandas as pd
+    import tempfile
+    path = tempfile.mktemp(suffix=".xlsx")
+    df = pd.DataFrame({
+        "Name": ["A", "B"],
+        "Offset": ["0.0", "0x4.0"],
+        "Field": ["F", "G"],
+        "Bits": ["7.0:0.0", "1.0"],
+        "Access": ["RW", "RW"],
+        "Reset": ["0xFF.0", "1.0"],
+    })
+    df.to_excel(path, index=False)
+    bank = ExcelParser(path, block_name="test").parse()
+    assert bank.registers[0].fields[0].msb == 7
+    assert bank.registers[0].fields[0].lsb == 0
+    assert bank.registers[0].fields[0].reset_val == 0xFF
+    assert bank.registers[1].fields[0].width == 1
+    assert bank.registers[1].fields[0].reset_val == 1
+    os.remove(path) if os.path.exists(path) else None

@@ -21,6 +21,8 @@ from src.parser.excel_parser import ExcelParser
 from src.validators.validator import Validator, ValidationError
 from src.generators.rtl_generator import RtlGenerator
 from src.generators.apb_wrapper_generator import ApbWrapperGenerator
+from src.generators.ahb_wrapper_generator import AhbWrapperGenerator
+from src.generators.axi_wrapper_generator import AxiWrapperGenerator
 from src.generators.uvm_generator import UvmGenerator
 from src.generators.c_header_generator import CHeaderGenerator
 from src.generators.json_generator import JsonGenerator
@@ -74,7 +76,7 @@ def main():
                         help="Generate a blank Excel template file and exit.")
     parser.add_argument("--dry_run", action="store_true",
                         help="Parse and validate only; print summary without generating files.")
-    parser.add_argument("--bus", default="none", choices=["none", "apb"],
+    parser.add_argument("--bus", default="none", choices=["none", "apb", "ahb", "axi"],
                         help="Bus protocol wrapper to generate (default: none).")
     parser.add_argument("--verbose", "-v", action="store_true",
                         help="Enable verbose (DEBUG-level) logging output.")
@@ -151,9 +153,19 @@ def main():
     # 4. Optional bus wrapper
     if args.bus == "apb":
         logger.info("Generating APB4 wrapper ...")
-        apb_gen = ApbWrapperGenerator(bank)
-        apb_path = apb_gen.generate(args.output_dir)
-        logger.info("Written: %s", apb_path)
+        gen = ApbWrapperGenerator(bank)
+        path = gen.generate(args.output_dir)
+        logger.info("Written: %s", path)
+    elif args.bus == "ahb":
+        logger.info("Generating AHB-Lite wrapper ...")
+        gen = AhbWrapperGenerator(bank)
+        path = gen.generate(args.output_dir)
+        logger.info("Written: %s", path)
+    elif args.bus == "axi":
+        logger.info("Generating AXI4-Lite wrapper ...")
+        gen = AxiWrapperGenerator(bank)
+        path = gen.generate(args.output_dir)
+        logger.info("Written: %s", path)
 
     logger.info("Done.")
 

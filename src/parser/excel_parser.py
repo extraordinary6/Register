@@ -16,6 +16,41 @@ _REQUIRED_COLUMNS = {"name", "offset", "field", "bits", "access", "reset"}
 _OPTIONAL_COLUMNS = {"hardware trigger", "side effect", "interrupt"}
 
 
+def _normalise_numeric_str(s: str) -> str:
+    """Tolerate Excel numeric cells read as float strings.
+
+    E.g. "1.0" -> "1", "3.0:1.0" -> "3:1", "0xFF.0" -> "0xFF",
+         "0b101.0" -> "0b101".
+    """
+    if "." not in s:
+        return s
+    parts = s.split(":")
+    return ":".join(
+        _normalise_one(p) for p in parts
+    )
+
+
+def _normalise_one(s: str) -> str:
+    """Normalise a single numeric token that may have a trailing '.0'."""
+    if "." not in s:
+        return s
+    # Handle hex: "0xFF.0" -> try int(x, 0) after stripping ".0"
+    base_prefixes = ("0x", "0X", "0b", "0B", "0o", "0O")
+    for pfx in base_prefixes:
+        if s.lower().startswith(pfx.lower()):
+            int_part = s.split(".")[0]
+            try:
+                int(int_part, 0)
+                return int_part
+            except (ValueError, TypeError):
+                return s
+    # Plain decimal: "1.0" -> "1", "255.0" -> "255"
+    try:
+        return str(int(float(s)))
+    except (ValueError, TypeError):
+        return s
+
+
 class ExcelParser:
     """Parse a register-specification Excel file into a RegisterBank.
 
@@ -70,6 +105,11 @@ class ExcelParser:
 
             if reg_name == "" or reg_name == "nan":
                 continue  # skip blank rows
+
+            # Normalise numeric strings (Excel may store numbers as "1.0")
+            offset_str = _normalise_numeric_str(offset_str)
+            bits_str = _normalise_numeric_str(bits_str)
+            reset_str = _normalise_numeric_str(reset_str)
 
             # Parse offset — blank means auto-increment from previous register
             if offset_str == "" or offset_str == "nan":

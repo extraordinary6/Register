@@ -1,5 +1,7 @@
 from .rtl_generator import RtlGenerator
 from .apb_wrapper_generator import ApbWrapperGenerator
+from .ahb_wrapper_generator import AhbWrapperGenerator
+from .axi_wrapper_generator import AxiWrapperGenerator
 from .uvm_generator import UvmGenerator
 from .c_header_generator import CHeaderGenerator
 from .json_generator import JsonGenerator

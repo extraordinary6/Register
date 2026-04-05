@@ -67,6 +67,30 @@ def test_effective_access_mapping(sample_bank):
     assert 'add_reg(CTRL, 32\'h000, "RW")' in code
 
 
+def test_uvm_uses_data_width_not_hardcoded_32():
+    """UVM register n_bits should match data_width, not hardcoded 32."""
+    from src.models.field import Field
+    from src.models.register import Register
+    from src.models.register_bank import RegisterBank
+
+    for dw in (8, 16, 64):
+        bank = RegisterBank("dw_test", data_width=dw)
+        reg = Register("REG_A", 0x00, data_width=dw)
+        reg.add_field(Field("F", "0", "RW", 0))
+        bank.add_register(reg)
+
+        gen = UvmGenerator(bank)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = gen.generate(tmpdir)
+            with open(path) as f:
+                code = f.read()
+
+        assert f"super.new(name, {dw}, UVM_NO_COVERAGE)" in code, \
+            f"data_width={dw}: expected n_bits={dw}"
+        assert f"{dw}'h000" in code, \
+            f"data_width={dw}: expected {dw}'h prefix in add_reg"
+
+
 def test_uvm_include_guard(sample_bank):
     gen = UvmGenerator(sample_bank)
     with tempfile.TemporaryDirectory() as tmpdir:
