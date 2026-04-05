@@ -31,10 +31,18 @@ class UvmGenerator:
         """
         template = self.env.get_template("uvm_reg_block.sv.j2")
 
+        address_literal_width = (
+            max(1, (self.bank.address_space - 1).bit_length())
+            if self.bank.address_space > 0 else 1
+        )
+        address_hex_digits = max(1, (address_literal_width + 3) // 4)
+
         code = template.render(
             block_name=self.bank.name,
             registers=self.bank.registers,
             data_width=self.bank.data_width,
+            address_literal_width=address_literal_width,
+            address_hex_format=f"%0{address_hex_digits}X",
             timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         )
 

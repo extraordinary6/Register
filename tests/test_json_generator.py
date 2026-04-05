@@ -1,5 +1,7 @@
 """Tests for the JSON generator."""
 
+from __future__ import annotations
+
 import json
 import tempfile
 
@@ -19,17 +21,37 @@ def test_json_structure(sample_bank):
 
 
 def test_side_effect_included(sample_bank):
-    """side_effect should appear in JSON field output."""
     gen = JsonGenerator(sample_bank)
     with tempfile.TemporaryDirectory() as tmpdir:
         path = gen.generate(tmpdir)
         with open(path) as f:
             data = json.load(f)
 
-    # PEND has side_effect = "Set on read"
     status_reg = next(r for r in data["registers"] if r["name"] == "STATUS")
     pend_field = next(f for f in status_reg["fields"] if f["name"] == "PEND")
     assert pend_field["side_effect"] == "Set on read"
+
+
+def test_interrupt_role_included():
+    from src.models.field import Field
+    from src.models.register import Register
+    from src.models.register_bank import RegisterBank
+
+    bank = RegisterBank("irq_json")
+    reg = Register("INT_STS", 0x00)
+    field = Field("DONE", "0", "W1C", 0, hardware_interface="input")
+    field.interrupt_role = "source"
+    reg.add_field(field)
+    bank.add_register(reg)
+
+    gen = JsonGenerator(bank)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = gen.generate(tmpdir)
+        with open(path) as f:
+            data = json.load(f)
+
+    out_field = data["registers"][0]["fields"][0]
+    assert out_field["interrupt_role"] == "source"
 
 
 def test_base_address_and_data_width(sample_bank):

@@ -1,7 +1,7 @@
 // ============================================================================
 // RegPulse Auto-Generated UVM RAL Model
 // Block    : chip_regs_reg_block
-// Generated: 2026-04-05 18:27:43
+// Generated: 2026-04-06 00:24:19
 // ============================================================================
 `ifndef CHIP_REGS_REG_BLOCK_SV
 `define CHIP_REGS_REG_BLOCK_SV
@@ -57,12 +57,12 @@ class chip_regs_reg_block extends uvm_reg_block;
     function void set_default_map(uvm_reg_map map);
         this.default_map = map;
         this.default_map.set_base_addr('h0);
-        this.default_map.add_reg(CTRL, 32'h000, "RW");
-        this.default_map.add_reg(STATUS, 32'h004, "RO");
-        this.default_map.add_reg(INT_EN, 32'h008, "RW");
-        this.default_map.add_reg(INT_STS, 32'h00C, "RW");
-        this.default_map.add_reg(DMA_CTRL, 32'h010, "RW");
-        this.default_map.add_reg(ERR_STS, 32'h014, "RO");
+        this.default_map.add_reg(CTRL, 5'h00, "RW");
+        this.default_map.add_reg(STATUS, 5'h04, "RO");
+        this.default_map.add_reg(INT_EN, 5'h08, "RW");
+        this.default_map.add_reg(INT_STS, 5'h0C, "RW");
+        this.default_map.add_reg(DMA_CTRL, 5'h10, "RW");
+        this.default_map.add_reg(ERR_STS, 5'h14, "RO");
     endfunction
 
 endclass

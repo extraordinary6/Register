@@ -7,7 +7,7 @@ module {{ module_name }}_apb_wrapper (
     // APB4 Interface
     input  wire        pclk,
     input  wire        presetn,
-    input  wire [31:0] paddr,
+    input  wire [{{ ext_addr_width - 1 }}:0] paddr,
     input  wire        psel,
     input  wire        penable,
     input  wire        pwrite,

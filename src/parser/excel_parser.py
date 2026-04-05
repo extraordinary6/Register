@@ -105,15 +105,31 @@ class ExcelParser:
         byte_width = self.data_width // 8
 
         for row_idx, (_, row) in enumerate(df.iterrows()):
-            reg_name = str(row["name"]).strip()
-            offset_str = str(row["offset"]).strip()
-            field_name = str(row["field"]).strip()
-            bits_str = str(row["bits"]).strip()
-            access_type = str(row["access"]).strip()
-            reset_str = str(row["reset"]).strip()
+            reg_name = _optional_text(row["name"])
+            offset_str = _optional_text(row["offset"])
+            field_name = _optional_text(row["field"])
+            bits_str = _optional_text(row["bits"])
+            access_type = _optional_text(row["access"])
+            reset_str = _optional_text(row["reset"])
 
-            if reg_name == "" or reg_name == "nan":
-                continue  # skip blank rows
+            if all(v == "" for v in (reg_name, offset_str, field_name, bits_str, access_type, reset_str)):
+                continue
+
+            missing_required = []
+            if reg_name == "":
+                missing_required.append("Name")
+            if field_name == "":
+                missing_required.append("Field")
+            if bits_str == "":
+                missing_required.append("Bits")
+            if access_type == "":
+                missing_required.append("Access")
+            if reset_str == "":
+                missing_required.append("Reset")
+            if missing_required:
+                raise ValueError(
+                    f"Row {row_idx + 2}: missing required cell(s): {', '.join(missing_required)}."
+                )
 
             # Normalise numeric strings (Excel may store numbers as "1.0")
             offset_str = _normalise_numeric_str(offset_str)
@@ -121,7 +137,7 @@ class ExcelParser:
             reset_str = _normalise_numeric_str(reset_str)
 
             # Parse offset — blank means auto-increment from previous register
-            if offset_str == "" or offset_str == "nan":
+            if offset_str == "":
                 offset = last_offset + byte_width
             else:
                 try:

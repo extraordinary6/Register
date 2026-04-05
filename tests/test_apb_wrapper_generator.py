@@ -1,12 +1,13 @@
 """Tests for the APB wrapper generator."""
 
+from __future__ import annotations
+
 import tempfile
 
 from src.generators.apb_wrapper_generator import ApbWrapperGenerator
 
 
 def test_wrapper_instantiates_regfile_core(sample_bank):
-    """APB wrapper should instantiate the regfile_core module."""
     gen = ApbWrapperGenerator(sample_bank)
     with tempfile.TemporaryDirectory() as tmpdir:
         path = gen.generate(tmpdir)
@@ -18,7 +19,6 @@ def test_wrapper_instantiates_regfile_core(sample_bank):
 
 
 def test_apb_signals_declared(sample_bank):
-    """APB wrapper should have APB4 interface signals."""
     gen = ApbWrapperGenerator(sample_bank)
     with tempfile.TemporaryDirectory() as tmpdir:
         path = gen.generate(tmpdir)
@@ -27,7 +27,7 @@ def test_apb_signals_declared(sample_bank):
 
     assert "input  wire        pclk," in code
     assert "input  wire        presetn," in code
-    assert "input  wire [31:0] paddr," in code
+    assert "input  wire [4:0] paddr," in code
     assert "input  wire        psel," in code
     assert "input  wire        penable," in code
     assert "input  wire        pwrite," in code
@@ -39,7 +39,6 @@ def test_apb_signals_declared(sample_bank):
 
 
 def test_read_pending_state_machine(sample_bank):
-    """APB wrapper should have read_pending state register."""
     gen = ApbWrapperGenerator(sample_bank)
     with tempfile.TemporaryDirectory() as tmpdir:
         path = gen.generate(tmpdir)
@@ -47,50 +46,40 @@ def test_read_pending_state_machine(sample_bank):
             code = f.read()
 
     assert "reg read_pending" in code
-    # read_pending set on read access
     assert "read_pending <= 1'b1" in code
-    # read_pending cleared when core_ready
     assert "read_pending <= 1'b0" in code
     assert "core_ready" in code
 
 
 def test_pready_pslverr_logic(sample_bank):
-    """pready should stall for reads; pslverr should be tied low."""
     gen = ApbWrapperGenerator(sample_bank)
     with tempfile.TemporaryDirectory() as tmpdir:
         path = gen.generate(tmpdir)
         with open(path) as f:
             code = f.read()
 
-    # pready goes high on write immediately or on read completion
     assert "assign pready" in code
     assert "psel && penable && pwrite && !read_pending" in code
     assert "read_pending && core_ready" in code
-    # pslverr always 0
     assert "assign pslverr    = 1'b0" in code
 
 
 def test_hw_port_passthrough(sample_bank):
-    """HW ports should be declared and connected through to the core."""
     gen = ApbWrapperGenerator(sample_bank)
     with tempfile.TemporaryDirectory() as tmpdir:
         path = gen.generate(tmpdir)
         with open(path) as f:
             code = f.read()
 
-    # HW output ports declared on wrapper
     assert "output wire [0:0] ctrl_en_q" in code
     assert "output wire [3:1] ctrl_mode_q" in code
-    # HW input ports declared on wrapper
     assert "input  wire [0:0] status_done_st" in code
     assert "input  wire [1:1] status_busy_st" in code
-    # Connected to core instance
     assert ".ctrl_en_q (ctrl_en_q)" in code
     assert ".status_done_st (status_done_st)" in code
 
 
 def test_irq_passthrough():
-    """irq_o should pass through to core when interrupt pairs exist."""
     from src.models.field import Field
     from src.models.register import Register
     from src.models.register_bank import RegisterBank
@@ -119,7 +108,6 @@ def test_irq_passthrough():
 
 
 def test_no_irq_when_no_pairs(sample_bank):
-    """irq_o should NOT appear when there are no interrupt pairs."""
     gen = ApbWrapperGenerator(sample_bank)
     with tempfile.TemporaryDirectory() as tmpdir:
         path = gen.generate(tmpdir)
@@ -130,19 +118,16 @@ def test_no_irq_when_no_pairs(sample_bank):
 
 
 def test_addr_mapping(sample_bank):
-    """paddr should be shifted to word address for core."""
     gen = ApbWrapperGenerator(sample_bank)
     with tempfile.TemporaryDirectory() as tmpdir:
         path = gen.generate(tmpdir)
         with open(path) as f:
             code = f.read()
 
-    # paddr mapped from byte to word address
     assert "core_addr  = paddr[" in code
 
 
 def test_module_name(sample_bank):
-    """Module name should end with _apb_wrapper."""
     gen = ApbWrapperGenerator(sample_bank)
     with tempfile.TemporaryDirectory() as tmpdir:
         path = gen.generate(tmpdir)
@@ -153,8 +138,8 @@ def test_module_name(sample_bank):
     assert "module test_top_apb_wrapper" in code
 
 
-def test_write_no_stall():
-    """Write operations should not be gated by read_pending."""
+def test_write_is_gated_while_read_pending():
+    """Writes are intentionally blocked while a read response is outstanding."""
     from src.models.field import Field
     from src.models.register import Register
     from src.models.register_bank import RegisterBank
@@ -170,14 +155,11 @@ def test_write_no_stall():
         with open(path) as f:
             code = f.read()
 
-    # core_wen does NOT require !read_pending for writes
     assert "core_wen   = psel && penable && pwrite && !read_pending" in code
-    # pready includes immediate write path
     assert "psel && penable && pwrite && !read_pending" in code
 
 
 def test_apb_data_width_64():
-    """APB wrapper with 64-bit data width should use correct signal widths."""
     from src.models.field import Field
     from src.models.register import Register
     from src.models.register_bank import RegisterBank
@@ -196,6 +178,27 @@ def test_apb_data_width_64():
     assert "input  wire [63:0] pwdata," in code
     assert "input  wire [7:0]  pstrb," in code
     assert "output wire [63:0] prdata," in code
-    # Address shift should use :3 (log2(8)) for 64-bit, not :2
     assert ":3]" in code
     assert ":2]" not in code
+
+
+def test_apb_external_address_width_tracks_bank_span():
+    from src.models.field import Field
+    from src.models.register import Register
+    from src.models.register_bank import RegisterBank
+
+    bank = RegisterBank("addr_top")
+    reg0 = Register("REG0", 0x00)
+    reg0.add_field(Field("F0", "0", "RW", 0))
+    bank.add_register(reg0)
+    reg1 = Register("REG1", 0x10)
+    reg1.add_field(Field("F1", "0", "RW", 0))
+    bank.add_register(reg1)
+
+    gen = ApbWrapperGenerator(bank)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = gen.generate(tmpdir)
+        with open(path) as f:
+            code = f.read()
+
+    assert "input  wire [4:0] paddr," in code

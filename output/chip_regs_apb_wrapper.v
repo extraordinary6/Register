@@ -1,13 +1,13 @@
 // ============================================================================
 // RegPulse Auto-Generated APB4 Wrapper
 // Module   : chip_regs_apb_wrapper
-// Generated: 2026-04-05 18:27:52
+// Generated: 2026-04-06 00:24:17
 // ============================================================================
 module chip_regs_apb_wrapper (
     // APB4 Interface
     input  wire        pclk,
     input  wire        presetn,
-    input  wire [31:0] paddr,
+    input  wire [4:0] paddr,
     input  wire        psel,
     input  wire        penable,
     input  wire        pwrite,

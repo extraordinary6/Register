@@ -53,6 +53,7 @@ class JsonGenerator:
             "reset_val": field.reset_val,
             "description": field.description,
             "hw_interface": field.hardware_interface,
+            "interrupt_role": field.interrupt_role,
             "is_bus_writable": field.is_bus_writable,
             "has_read_side_effect": field.has_read_side_effect,
             "side_effect": field.side_effect,

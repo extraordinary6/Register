@@ -1,6 +1,6 @@
 # chip_regs Register Map
 
-Generated: 2026-04-05 18:27:43  
+Generated: 2026-04-06 00:24:19  
 Registers: 6 | Address Space: 24 bytes | Base Address: 0x00000000
 
 ## Access Types

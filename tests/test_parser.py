@@ -1,8 +1,14 @@
 """Tests for the Excel parser."""
 
+from __future__ import annotations
+
+import os
+import tempfile
+
+import pandas as pd
 import pytest
+
 from src.parser.excel_parser import ExcelParser
-from src.validators.validator import Validator
 
 
 def test_parse_sample_excel(sample_excel):
@@ -19,8 +25,6 @@ def test_parse_interrupt_column(sample_excel_with_irq):
 
 def test_parse_missing_column(sample_excel):
     """Excel with a missing required column should raise ValueError."""
-    import pandas as pd
-    import tempfile
     bad_path = tempfile.mktemp(suffix=".xlsx")
     df = pd.DataFrame({"Name": ["A"], "Field": ["F"], "Bits": ["0"]})
     df.to_excel(bad_path, index=False)
@@ -30,8 +34,6 @@ def test_parse_missing_column(sample_excel):
 
 
 def test_parse_auto_increment():
-    import pandas as pd
-    import tempfile
     path = tempfile.mktemp(suffix=".xlsx")
     df = pd.DataFrame({
         "Name": ["A", "B", "C"],
@@ -50,8 +52,6 @@ def test_parse_auto_increment():
 
 
 def test_parse_hex_reset():
-    import pandas as pd
-    import tempfile
     path = tempfile.mktemp(suffix=".xlsx")
     df = pd.DataFrame({
         "Name": ["A"], "Offset": ["0x00"], "Field": ["F"],
@@ -64,8 +64,6 @@ def test_parse_hex_reset():
 
 
 def test_parse_invalid_access():
-    import pandas as pd
-    import tempfile
     path = tempfile.mktemp(suffix=".xlsx")
     df = pd.DataFrame({
         "Name": ["A"], "Offset": ["0x00"], "Field": ["F"],
@@ -77,13 +75,9 @@ def test_parse_invalid_access():
     os.remove(path) if os.path.exists(path) else None
 
 
-import os
-
-
 @pytest.fixture
 def sample_excel_with_irq(tmp_path):
     """Excel with Interrupt column for testing."""
-    import pandas as pd
     xlsx_path = tmp_path / "test_irq.xlsx"
     data = {
         "Name": ["INT_STS", "INT_EN"],
@@ -103,8 +97,6 @@ def sample_excel_with_irq(tmp_path):
 
 def test_parse_float_numeric_strings():
     """Excel cells stored as float (e.g. '1.0', '3.0:1.0') should parse."""
-    import pandas as pd
-    import tempfile
     path = tempfile.mktemp(suffix=".xlsx")
     df = pd.DataFrame({
         "Name": ["A", "B"],
@@ -122,3 +114,51 @@ def test_parse_float_numeric_strings():
     assert bank.registers[1].fields[0].width == 1
     assert bank.registers[1].fields[0].reset_val == 1
     os.remove(path) if os.path.exists(path) else None
+
+
+def test_blank_row_is_skipped(tmp_path):
+    path = tmp_path / "blank_row.xlsx"
+    df = pd.DataFrame({
+        "Name": ["CTRL", ""],
+        "Offset": ["0x00", ""],
+        "Field": ["EN", ""],
+        "Bits": ["0", ""],
+        "Access": ["RW", ""],
+        "Reset": ["0", ""],
+    })
+    df.to_excel(path, index=False)
+    bank = ExcelParser(str(path), block_name="test").parse()
+    assert bank.num_registers == 1
+    assert bank.registers[0].fields[0].name == "EN"
+
+
+def test_blank_field_cell_raises_parse_error(tmp_path):
+    path = tmp_path / "blank_field.xlsx"
+    df = pd.DataFrame({
+        "Name": ["CTRL"],
+        "Offset": ["0x00"],
+        "Field": [""],
+        "Bits": ["0"],
+        "Access": ["RW"],
+        "Reset": ["0"],
+    })
+    df.to_excel(path, index=False)
+
+    with pytest.raises(ValueError, match=r"Row 2: missing required cell\(s\): Field"):
+        ExcelParser(str(path), block_name="test").parse()
+
+
+def test_nan_field_cell_raises_parse_error(tmp_path):
+    path = tmp_path / "nan_field.xlsx"
+    df = pd.DataFrame({
+        "Name": ["CTRL"],
+        "Offset": ["0x00"],
+        "Field": [float("nan")],
+        "Bits": ["0"],
+        "Access": ["RW"],
+        "Reset": ["0"],
+    })
+    df.to_excel(path, index=False)
+
+    with pytest.raises(ValueError, match=r"Row 2: missing required cell\(s\): Field"):
+        ExcelParser(str(path), block_name="test").parse()

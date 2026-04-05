@@ -1,5 +1,7 @@
 """Tests for the HTML generator."""
 
+from __future__ import annotations
+
 import tempfile
 
 from src.generators.html_generator import HtmlGenerator
@@ -19,14 +21,15 @@ def test_html_structure(sample_bank):
 
 
 def test_xss_escaping():
-    """Field names with HTML characters should be escaped."""
     from src.models.field import Field
     from src.models.register import Register
     from src.models.register_bank import RegisterBank
 
-    bank = RegisterBank("test_xss")
-    reg = Register("REG", 0x00)
-    reg.add_field(Field("script_field", "0", "RW", 0))
+    bank = RegisterBank("html_top")
+    reg = Register("REG<script>", 0x00)
+    field = Field("NAME<&>", "0", "RW", 0)
+    field.description = 'desc <script>alert(1)</script> & "quoted"'
+    reg.add_field(field)
     bank.add_register(reg)
 
     gen = HtmlGenerator(bank)
@@ -35,8 +38,11 @@ def test_xss_escaping():
         with open(path) as f:
             code = f.read()
 
-    # The field name should appear in the output
-    assert "script_field" in code
+    assert "html_top" in code
+    assert "REG&lt;script&gt;" in code
+    assert "NAME&lt;&amp;&gt;" in code
+    assert "desc &lt;script&gt;alert(1)&lt;/script&gt; &amp; &quot;quoted&quot;" in code
+    assert "<script>alert(1)</script>" not in code
 
 
 def test_new_access_types_in_legend():

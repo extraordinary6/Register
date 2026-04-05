@@ -15,17 +15,25 @@ RegPulse generates bus-agnostic register file cores, optional bus protocol wrapp
 - Access types: `RW`, `RO`, `WO`, `W1C`, `W1S`, `W0C`, `RC`, `RS`
 - Hardware sideband ports and interrupt aggregation support
 
-## Quick Start
+## Installation
 
-Common ways to run RegPulse:
-
-- From a source checkout: `python main.py ...`
-- After installation: `regpulse ...`
+### Run from a source checkout
 
 ```bash
-# Install dependencies
-pip install pandas openpyxl jinja2
+pip install pandas openpyxl jinja2 pytest
+python main.py --help
+```
 
+### Install the CLI
+
+```bash
+pip install .
+regpulse --help
+```
+
+## Quick Start
+
+```bash
 # Generate register core + all default formats
 python main.py --input_excel spec.xlsx --output_dir ./output
 
@@ -37,6 +45,9 @@ python main.py --input_excel spec.xlsx --output_dir ./output --bus axi
 # Generate selected formats only
 python main.py --input_excel spec.xlsx --output_dir ./output --format rtl,uvm,c_header
 
+# Wrapper generation auto-includes the RTL core even if --format omits it
+python main.py --input_excel spec.xlsx --output_dir ./output --format uvm,json --bus apb
+
 # Parse + validate only
 python main.py --input_excel spec.xlsx --output_dir ./output --dry_run
 
@@ -44,8 +55,10 @@ python main.py --input_excel spec.xlsx --output_dir ./output --dry_run
 python main.py --input_excel spec.xlsx --output_dir ./output --lint
 
 # Generate a blank Excel template
-python main.py --input_excel template.xlsx --output_dir ./output --template_excel
+python main.py --output_dir ./output --template_excel
 ```
+
+You can replace `python main.py` with `regpulse` after installation.
 
 ## Architecture
 
@@ -56,7 +69,7 @@ chip_regs_{apb,ahb,axi}_wrapper  ->  bus protocol to generic interface bridge
 chip_regs_regfile_core           ->  bus-agnostic register file
 ```
 
-- `regfile_core`: always generated, contains register logic, sideband ports, and interrupt aggregation
+- `regfile_core`: generated whenever RTL output is requested, and auto-generated when `--bus` is used
 - `bus_wrapper`: optional, maps the selected bus to the generic core interface
 
 ## Excel Specification Format
@@ -67,7 +80,7 @@ Required columns:
 |--------|-------------|
 | `Name` | Register name |
 | `Offset` | Byte offset, for example `0x000` or `0x004` |
-| `Field` | Field name within the register |
+| `Field` | Field name within the register. Blank/NaN values are rejected. |
 | `Bits` | Bit position, for example `"0"` or `"3:1"` |
 | `Access` | `RW`, `RO`, `WO`, `W1C`, `W1S`, `W0C`, `RC`, `RS` |
 | `Reset` | Reset value |
@@ -79,19 +92,21 @@ Optional columns:
 - `Side Effect`
 - `Interrupt` with values `source` or `enable`
 
+Fully blank rows are skipped.
+
 ## Output Files
 
-| File | Description |
-|------|-------------|
-| `{name}_regfile_core.v` | Bus-agnostic register file core |
-| `{name}_apb_wrapper.v` | APB4 wrapper |
-| `{name}_ahb_wrapper.v` | AHB-Lite wrapper |
-| `{name}_axi_wrapper.v` | AXI4-Lite wrapper |
-| `{name}_reg_block.sv` | UVM RAL model |
-| `{name}.h` | C header |
-| `{name}.json` | Machine-readable register map |
-| `{name}.md` | Markdown documentation |
-| `{name}.html` | HTML documentation |
+| File | When generated | Description |
+|------|----------------|-------------|
+| `{name}_regfile_core.v` | `rtl` format or any `--bus` wrapper | Bus-agnostic register file core |
+| `{name}_apb_wrapper.v` | `--bus apb` | APB4 wrapper |
+| `{name}_ahb_wrapper.v` | `--bus ahb` | AHB-Lite wrapper |
+| `{name}_axi_wrapper.v` | `--bus axi` | AXI4-Lite wrapper |
+| `{name}_reg_block.sv` | `uvm` format | UVM RAL model |
+| `{name}.h` | `c_header` format | C header |
+| `{name}.json` | `json` format | Machine-readable register map |
+| `{name}.md` | `markdown` format | Markdown documentation |
+| `{name}.html` | `html` format | HTML documentation |
 
 ## CLI Reference
 
@@ -102,15 +117,16 @@ python main.py --input_excel <file> --output_dir <dir> [options]
 regpulse --input_excel <file> --output_dir <dir> [options]
 
 Required:
-  --input_excel FILE     Input .xlsx register specification
-  --output_dir DIR       Output directory
+  --output_dir DIR          Output directory
+  --input_excel FILE        Input .xlsx register specification
+                            Required unless --template_excel is used
 
 Optional:
   --block_name NAME         Module/block name (default: reg_top)
   --base_address ADDR       Base address, e.g. 0x8000_0000 (default: 0x0)
   --block_size ADDR         Optional declared block size for lint checks
   --data_width N            Data width: 8, 16, 32, or 64 (default: 32)
-  --bus {none,apb,ahb,axi}  Bus protocol wrapper (default: none)
+  --bus {none,apb,ahb,axi}  Generate the selected wrapper; auto-includes rtl
   --format FMTS             Comma-separated formats: rtl,uvm,c_header,json,html,markdown
   --rtl_only                Shorthand for --format rtl
   --uvm_only                Shorthand for --format uvm
@@ -132,7 +148,7 @@ Register/
 │   ├── validators/      # Structural validation
 │   ├── generators/      # RTL, wrappers, UVM, C header, JSON, Markdown, HTML
 │   ├── lint/            # Advisory lint rules and reporting
-│   └── templates/       # Jinja2 templates
+│   └── templates/       # Jinja2 templates packaged with the CLI
 ├── main.py              # Command-line entrypoint
 ├── tests/               # Pytest test suite
 ├── output/              # Example generated output
@@ -142,7 +158,6 @@ Register/
 ## Running Tests
 
 ```bash
-pip install pytest
 pytest tests/ -v
 ```
 

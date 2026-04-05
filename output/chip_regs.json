@@ -1,6 +1,6 @@
 {
   "block_name": "chip_regs",
-  "generated": "2026-04-05 18:27:43",
+  "generated": "2026-04-06 00:24:19",
   "base_address": "0x00000000",
   "data_width": 32,
   "num_registers": 6,
@@ -24,6 +24,7 @@
           "reset_val": 0,
           "description": "",
           "hw_interface": "output",
+          "interrupt_role": null,
           "is_bus_writable": true,
           "has_read_side_effect": false,
           "side_effect": ""
@@ -37,6 +38,7 @@
           "reset_val": 0,
           "description": "",
           "hw_interface": "output",
+          "interrupt_role": null,
           "is_bus_writable": true,
           "has_read_side_effect": false,
           "side_effect": ""
@@ -50,6 +52,7 @@
           "reset_val": 0,
           "description": "",
           "hw_interface": null,
+          "interrupt_role": null,
           "is_bus_writable": false,
           "has_read_side_effect": false,
           "side_effect": ""
@@ -74,6 +77,7 @@
           "reset_val": 0,
           "description": "",
           "hw_interface": "input",
+          "interrupt_role": null,
           "is_bus_writable": false,
           "has_read_side_effect": false,
           "side_effect": ""
@@ -87,6 +91,7 @@
           "reset_val": 0,
           "description": "",
           "hw_interface": "input",
+          "interrupt_role": null,
           "is_bus_writable": false,
           "has_read_side_effect": false,
           "side_effect": ""
@@ -100,6 +105,7 @@
           "reset_val": 0,
           "description": "",
           "hw_interface": "input",
+          "interrupt_role": null,
           "is_bus_writable": false,
           "has_read_side_effect": true,
           "side_effect": "Set on read"
@@ -124,6 +130,7 @@
           "reset_val": 0,
           "description": "",
           "hw_interface": "output",
+          "interrupt_role": "enable",
           "is_bus_writable": true,
           "has_read_side_effect": false,
           "side_effect": ""
@@ -137,6 +144,7 @@
           "reset_val": 0,
           "description": "",
           "hw_interface": "output",
+          "interrupt_role": "enable",
           "is_bus_writable": true,
           "has_read_side_effect": false,
           "side_effect": ""
@@ -161,6 +169,7 @@
           "reset_val": 0,
           "description": "",
           "hw_interface": "input",
+          "interrupt_role": "source",
           "is_bus_writable": true,
           "has_read_side_effect": false,
           "side_effect": "Write-1-to-clear; hw sets"
@@ -185,6 +194,7 @@
           "reset_val": 0,
           "description": "",
           "hw_interface": "output",
+          "interrupt_role": null,
           "is_bus_writable": false,
           "has_read_side_effect": true,
           "side_effect": "Set on read"
@@ -198,6 +208,7 @@
           "reset_val": 0,
           "description": "",
           "hw_interface": null,
+          "interrupt_role": null,
           "is_bus_writable": false,
           "has_read_side_effect": false,
           "side_effect": ""
@@ -211,6 +222,7 @@
           "reset_val": 0,
           "description": "",
           "hw_interface": "output",
+          "interrupt_role": null,
           "is_bus_writable": true,
           "has_read_side_effect": false,
           "side_effect": ""
@@ -235,6 +247,7 @@
           "reset_val": 1,
           "description": "",
           "hw_interface": "input",
+          "interrupt_role": null,
           "is_bus_writable": false,
           "has_read_side_effect": true,
           "side_effect": "Clear on read"
@@ -248,6 +261,7 @@
           "reset_val": 1,
           "description": "",
           "hw_interface": "input",
+          "interrupt_role": null,
           "is_bus_writable": false,
           "has_read_side_effect": true,
           "side_effect": "Clear on read"

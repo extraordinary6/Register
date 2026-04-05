@@ -1,7 +1,7 @@
 // ============================================================================
 // RegPulse Auto-Generated AXI4-Lite Wrapper
 // Module   : chip_regs_axi_wrapper
-// Generated: 2026-04-05 18:28:09
+// Generated: 2026-04-06 00:24:19
 // ============================================================================
 module chip_regs_axi_wrapper (
     // AXI4-Lite Global
@@ -11,7 +11,7 @@ module chip_regs_axi_wrapper (
     // AXI4-Lite Write Address Channel
     input  wire                        awvalid,
     output wire                        awready,
-    input  wire [31:0]                 awaddr,
+    input  wire [4:0] awaddr,
 
     // AXI4-Lite Write Data Channel
     input  wire                        wvalid,
@@ -27,7 +27,7 @@ module chip_regs_axi_wrapper (
     // AXI4-Lite Read Address Channel
     input  wire                        arvalid,
     output wire                        arready,
-    input  wire [31:0]                 araddr,
+    input  wire [4:0] araddr,
 
     // AXI4-Lite Read Data Channel
     output wire                        rvalid,
@@ -64,14 +64,14 @@ module chip_regs_axi_wrapper (
     // Write Address Channel
     // ========================================================================
     reg  awaddr_sel;
-    reg  [31:0] awaddr_reg;
+    reg  [4:0] awaddr_reg;
     wire awaddr_done = awvalid && awready;
     assign awready = awvalid && !awaddr_sel;
 
     always @(posedge aclk or negedge aresetn) begin
         if (!aresetn) begin
             awaddr_sel <= 1'b0;
-            awaddr_reg <= 32'd0;
+            awaddr_reg <= 5'd0;
         end else if (awaddr_done) begin
             awaddr_sel <= 1'b1;
             awaddr_reg <= awaddr;
@@ -116,14 +116,14 @@ module chip_regs_axi_wrapper (
     // Read Address Channel
     // ========================================================================
     reg ar_sel;
-    reg [31:0] araddr_reg;
+    reg [4:0] araddr_reg;
     wire ar_done = arvalid && arready;
     assign arready = arvalid && !ar_sel;
 
     always @(posedge aclk or negedge aresetn) begin
         if (!aresetn) begin
             ar_sel <= 1'b0;
-            araddr_reg <= 32'd0;
+            araddr_reg <= 5'd0;
         end else if (ar_done) begin
             ar_sel <= 1'b1;
             araddr_reg <= araddr;

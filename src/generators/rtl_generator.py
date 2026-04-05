@@ -26,6 +26,8 @@ class RtlGenerator:
         self.env.filters["ones"] = lambda w: str((1 << w) - 1)
         self.env.filters["hex_zero"] = lambda dw: "0" * (dw // 4)
         self.env.filters["hex_reset"] = lambda v: f"{v:0{self.bank.data_width // 4}X}"
+        self.env.filters["wstrb_low"] = lambda field: field.lsb // 8
+        self.env.filters["wstrb_high"] = lambda field: field.msb // 8
 
     def generate(self, output_dir: str) -> str:
         """Render the Verilog and write to <output_dir>/<module_name>_regfile_core.v.
@@ -41,12 +43,6 @@ class RtlGenerator:
         addr_width = max(1, (num_words - 1).bit_length()) if num_words > 0 else 1
         addr_msb = addr_width - 1
         dw_msb = dw - 1
-
-        # Pre-compute wstrb indices for each field
-        for reg in self.bank.registers:
-            for field in reg.fields:
-                field.wstrb_low = field.lsb // 8
-                field.wstrb_high = field.msb // 8
 
         code = template.render(
             module_name=self.bank.name,

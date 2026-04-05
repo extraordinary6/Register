@@ -1,5 +1,7 @@
 """Tests for the AXI4-Lite wrapper generator."""
 
+from __future__ import annotations
+
 import tempfile
 
 from src.generators.axi_wrapper_generator import AxiWrapperGenerator
@@ -23,24 +25,19 @@ def test_axi_channels_declared(sample_bank):
         with open(path) as f:
             code = f.read()
 
-    # Write Address Channel
     assert "awvalid" in code
     assert "awready" in code
-    assert "awaddr" in code
-    # Write Data Channel
+    assert "input  wire [4:0] awaddr," in code
     assert "wvalid" in code
     assert "wready" in code
     assert "wdata" in code
     assert "wstrb" in code
-    # Write Response Channel
     assert "bvalid" in code
     assert "bready" in code
     assert "bresp" in code
-    # Read Address Channel
     assert "arvalid" in code
     assert "arready" in code
-    assert "araddr" in code
-    # Read Data Channel
+    assert "input  wire [4:0] araddr," in code
     assert "rvalid" in code
     assert "rready" in code
     assert "rdata" in code
@@ -143,7 +140,6 @@ def test_read_uses_araddr(sample_bank):
         with open(path) as f:
             code = f.read()
 
-    # core_addr must mux between awaddr_reg and araddr_reg
     assert "araddr_reg" in code
     assert "awaddr_reg" in code
     assert "core_wen ? awaddr_reg" in code
@@ -165,6 +161,29 @@ def test_axi_data_width_64():
         with open(path) as f:
             code = f.read()
 
-    assert "wire [63:0] wdata," in code
-    assert "wire [7:0] wstrb," in code
-    assert "wire [63:0] rdata," in code
+    assert "input  wire [63:0] wdata," in code
+    assert "input  wire [7:0] wstrb," in code
+    assert "output wire [63:0] rdata," in code
+
+
+def test_axi_external_address_width_tracks_bank_span():
+    from src.models.field import Field
+    from src.models.register import Register
+    from src.models.register_bank import RegisterBank
+
+    bank = RegisterBank("addr_top")
+    reg0 = Register("REG0", 0x00)
+    reg0.add_field(Field("F0", "0", "RW", 0))
+    bank.add_register(reg0)
+    reg1 = Register("REG1", 0x10)
+    reg1.add_field(Field("F1", "0", "RW", 0))
+    bank.add_register(reg1)
+
+    gen = AxiWrapperGenerator(bank)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = gen.generate(tmpdir)
+        with open(path) as f:
+            code = f.read()
+
+    assert "input  wire [4:0] awaddr," in code
+    assert "input  wire [4:0] araddr," in code

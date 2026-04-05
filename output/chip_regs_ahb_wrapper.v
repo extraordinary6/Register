@@ -1,13 +1,13 @@
 // ============================================================================
 // RegPulse Auto-Generated AHB-Lite Wrapper
 // Module   : chip_regs_ahb_wrapper
-// Generated: 2026-04-05 18:28:00
+// Generated: 2026-04-06 00:24:18
 // ============================================================================
 module chip_regs_ahb_wrapper (
     // AHB-Lite Interface
     input  wire                        hclk,
     input  wire                        hresetn,
-    input  wire [31:0]                 haddr,
+    input  wire [4:0] haddr,
     input  wire [31:0] hwdata,
     output wire [31:0] hrdata,
     input  wire                        hwrite,

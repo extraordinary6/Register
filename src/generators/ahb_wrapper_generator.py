@@ -37,6 +37,7 @@ class AhbWrapperGenerator:
         num_words = self.bank.address_space // byte_width
         addr_width = max(1, (num_words - 1).bit_length()) if num_words > 0 else 1
         byte_addr_lsb = _log2(byte_width)
+        ext_addr_width = max(1, addr_width + byte_addr_lsb)
 
         code = template.render(
             module_name=self.bank.name,
@@ -45,6 +46,7 @@ class AhbWrapperGenerator:
             byte_width=byte_width,
             strb_width=strb_width,
             addr_width=addr_width,
+            ext_addr_width=ext_addr_width,
             byte_addr_lsb=byte_addr_lsb,
             interrupt_pairs=self.bank.interrupt_pairs,
             timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),

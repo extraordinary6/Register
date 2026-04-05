@@ -90,7 +90,7 @@ module {{ module_name }}_regfile_core #(
 {% for field in reg.fields %}{% if field.hardware_interface == "input" %}
 {% if field.access_type == "RO" %}
             {{ reg.name }}[{{ field.msb }}:{{ field.lsb }}] <= {{ reg.name | lower }}_{{ field.name | lower }}_st;
-{% elif field.access_type in ("W1C", "RC", "RS") %}
+{% elif field.access_type in ("W1C", "W1S", "W0C", "RC", "RS") %}
             {{ reg.name }}[{{ field.msb }}:{{ field.lsb }}] <= {{ reg.name }}[{{ field.msb }}:{{ field.lsb }}] | {{ reg.name | lower }}_{{ field.name | lower }}_st;
 {% endif %}
 {% endif %}{% endfor %}
@@ -111,19 +111,19 @@ module {{ module_name }}_regfile_core #(
                 {{ "%d" | format(reg.offset // byte_width) }}: begin
 {% for field in reg.fields %}
 {% if field.access_type == "RW" %}
-                    if (wstrb[{{ field.wstrb_high }}:{{ field.wstrb_low }}] != {{ (field.wstrb_high - field.wstrb_low + 1) }}'d0)
+                    if (wstrb[{{ field | wstrb_high }}:{{ field | wstrb_low }}] != {{ ((field | wstrb_high) - (field | wstrb_low) + 1) }}'d0)
                         {{ reg.name }}[{{ field.msb }}:{{ field.lsb }}] <= wdata[{{ field.msb }}:{{ field.lsb }}];
 {% elif field.access_type == "WO" %}
-                    if (wstrb[{{ field.wstrb_high }}:{{ field.wstrb_low }}] != {{ (field.wstrb_high - field.wstrb_low + 1) }}'d0)
+                    if (wstrb[{{ field | wstrb_high }}:{{ field | wstrb_low }}] != {{ ((field | wstrb_high) - (field | wstrb_low) + 1) }}'d0)
                         {{ reg.name }}[{{ field.msb }}:{{ field.lsb }}] <= wdata[{{ field.msb }}:{{ field.lsb }}];
 {% elif field.access_type == "W1C" %}
-                    if (wstrb[{{ field.wstrb_high }}:{{ field.wstrb_low }}] != {{ (field.wstrb_high - field.wstrb_low + 1) }}'d0)
+                    if (wstrb[{{ field | wstrb_high }}:{{ field | wstrb_low }}] != {{ ((field | wstrb_high) - (field | wstrb_low) + 1) }}'d0)
                         {{ reg.name }}[{{ field.msb }}:{{ field.lsb }}] <= {{ reg.name }}[{{ field.msb }}:{{ field.lsb }}] & ~wdata[{{ field.msb }}:{{ field.lsb }}];
 {% elif field.access_type == "W1S" %}
-                    if (wstrb[{{ field.wstrb_high }}:{{ field.wstrb_low }}] != {{ (field.wstrb_high - field.wstrb_low + 1) }}'d0)
+                    if (wstrb[{{ field | wstrb_high }}:{{ field | wstrb_low }}] != {{ ((field | wstrb_high) - (field | wstrb_low) + 1) }}'d0)
                         {{ reg.name }}[{{ field.msb }}:{{ field.lsb }}] <= {{ reg.name }}[{{ field.msb }}:{{ field.lsb }}] | wdata[{{ field.msb }}:{{ field.lsb }}];
 {% elif field.access_type == "W0C" %}
-                    if (wstrb[{{ field.wstrb_high }}:{{ field.wstrb_low }}] != {{ (field.wstrb_high - field.wstrb_low + 1) }}'d0)
+                    if (wstrb[{{ field | wstrb_high }}:{{ field | wstrb_low }}] != {{ ((field | wstrb_high) - (field | wstrb_low) + 1) }}'d0)
                         {{ reg.name }}[{{ field.msb }}:{{ field.lsb }}] <= {{ reg.name }}[{{ field.msb }}:{{ field.lsb }}] & wdata[{{ field.msb }}:{{ field.lsb }}];
 {% endif %}
 {% endfor %}

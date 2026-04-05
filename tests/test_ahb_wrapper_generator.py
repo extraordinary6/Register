@@ -1,5 +1,7 @@
 """Tests for the AHB-Lite wrapper generator."""
 
+from __future__ import annotations
+
 import tempfile
 
 from src.generators.ahb_wrapper_generator import AhbWrapperGenerator
@@ -25,7 +27,7 @@ def test_ahb_signals_declared(sample_bank):
 
     assert "input  wire                        hclk," in code
     assert "input  wire                        hresetn," in code
-    assert "input  wire [31:0]                 haddr," in code
+    assert "input  wire [4:0] haddr," in code
     assert "input  wire [31:0] hwdata," in code
     assert "output wire [31:0] hrdata," in code
     assert "input  wire                        hwrite," in code
@@ -142,3 +144,25 @@ def test_ahb_data_width_64():
     assert "input  wire [7:0] hwstrb," in code
     assert "output wire [63:0] hrdata," in code
     assert ":3]" in code
+
+
+def test_ahb_external_address_width_tracks_bank_span():
+    from src.models.field import Field
+    from src.models.register import Register
+    from src.models.register_bank import RegisterBank
+
+    bank = RegisterBank("addr_top")
+    reg0 = Register("REG0", 0x00)
+    reg0.add_field(Field("F0", "0", "RW", 0))
+    bank.add_register(reg0)
+    reg1 = Register("REG1", 0x10)
+    reg1.add_field(Field("F1", "0", "RW", 0))
+    bank.add_register(reg1)
+
+    gen = AhbWrapperGenerator(bank)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = gen.generate(tmpdir)
+        with open(path) as f:
+            code = f.read()
+
+    assert "input  wire [4:0] haddr," in code

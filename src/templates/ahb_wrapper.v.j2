@@ -7,7 +7,7 @@ module {{ module_name }}_ahb_wrapper (
     // AHB-Lite Interface
     input  wire                        hclk,
     input  wire                        hresetn,
-    input  wire [31:0]                 haddr,
+    input  wire [{{ ext_addr_width - 1 }}:0] haddr,
     input  wire [{{ data_width - 1 }}:0] hwdata,
     output wire [{{ data_width - 1 }}:0] hrdata,
     input  wire                        hwrite,

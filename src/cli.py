@@ -4,7 +4,7 @@ Usage:
     python -m src.cli --input_excel spec.xlsx --output_dir ./output
     python -m src.cli --input_excel spec.xlsx --output_dir ./output --format rtl,uvm,c_header
     python -m src.cli --input_excel spec.xlsx --output_dir ./output --rtl_only
-    python -m src.cli --input_excel spec.xlsx --output_dir ./output --template_excel
+    python -m src.cli --output_dir ./output --template_excel
     python -m src.cli --input_excel spec.xlsx --output_dir ./output --dry_run
 """
 
@@ -56,7 +56,7 @@ def main(argv: list[str] | None = None):
     )
     parser.add_argument("--version", action="version",
                         version=f"%(prog)s {__version__}")
-    parser.add_argument("--input_excel", required=True,
+    parser.add_argument("--input_excel", required=False,
                         help="Path to the input .xlsx register specification file.")
     parser.add_argument("--output_dir", required=True,
                         help="Directory where generated files will be written.")
@@ -84,7 +84,7 @@ def main(argv: list[str] | None = None):
     parser.add_argument("--lint_strict", action="store_true",
                         help="When linting, treat warnings as build failures.")
     parser.add_argument("--bus", default="none", choices=["none", "apb", "ahb", "axi"],
-                        help="Bus protocol wrapper to generate (default: none).")
+                        help="Bus protocol wrapper to generate. If set, RTL core generation is auto-included (default: none).")
     parser.add_argument("--verbose", "-v", action="store_true",
                         help="Enable verbose (DEBUG-level) logging output.")
     args = parser.parse_args(argv)
@@ -104,7 +104,7 @@ def main(argv: list[str] | None = None):
     elif args.uvm_only:
         formats = ["uvm"]
     elif args.format:
-        formats = [f.strip() for f in args.format.split(",")]
+        formats = [f.strip() for f in args.format.split(",") if f.strip()]
     else:
         formats = list(DEFAULT_FORMATS)
 
@@ -112,10 +112,16 @@ def main(argv: list[str] | None = None):
         if f not in ALL_FORMATS:
             parser.error(f"Unknown format '{f}'. Supported: {ALL_FORMATS}")
 
+    if args.bus != "none" and "rtl" not in formats:
+        formats = ["rtl", *formats]
+
     # Generate template Excel if requested
     if args.template_excel:
         _generate_template(args.output_dir, args.data_width)
         return
+
+    if not args.input_excel:
+        parser.error("--input_excel is required unless --template_excel is used.")
 
     if not os.path.isfile(args.input_excel):
         logger.error("Input file not found: %s", args.input_excel)
@@ -241,7 +247,6 @@ def _report_lint(logger, findings):
 
 def _generate_template(output_dir: str, data_width: int = 32):
     """Generate a blank Excel template with data validation."""
-    import pandas as pd
     from openpyxl import Workbook
     from openpyxl.worksheet.datavalidation import DataValidation
 
