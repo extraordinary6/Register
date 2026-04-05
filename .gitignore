@@ -6,7 +6,6 @@ dist/
 build/
 *.egg
 .eggs/
-output/
 *.xlsx
 !tests/sample_spec.xlsx
 .pytest_cache/
