@@ -21,15 +21,23 @@ if SCRIPT_DIR not in sys.path:
 from src.parser.excel_parser import ExcelParser
 from src.validators.validator import Validator, ValidationError
 from src.generators.rtl_generator import RtlGenerator
+from src.generators.apb_wrapper_generator import ApbWrapperGenerator
+from src.generators.ahb_wrapper_generator import AhbWrapperGenerator
+from src.generators.axi_wrapper_generator import AxiWrapperGenerator
 from src.generators.uvm_generator import UvmGenerator
 from src.generators.c_header_generator import CHeaderGenerator
 from src.generators.json_generator import JsonGenerator
 from src.generators.html_generator import HtmlGenerator
+from src.generators.markdown_generator import MarkdownGenerator
 
 logger = logging.getLogger("regpulse")
 
-ALL_FORMATS = ["rtl", "uvm", "c_header", "json", "html"]
-DEFAULT_FORMATS = ["rtl", "uvm", "c_header", "json", "html"]
+__version__ = "0.6.0"
+
+ALL_FORMATS = ["rtl", "uvm", "c_header", "json", "html", "markdown"]
+DEFAULT_FORMATS = ["rtl", "uvm", "c_header", "json", "html", "markdown"]
+
+BUS_CHOICES = ["none", "apb", "ahb", "axi"]
 
 
 def setup_logging(verbose: bool = False):
@@ -51,6 +59,8 @@ def main():
                         help="Base address for the register map (default: 0x0).")
     parser.add_argument("--data_width", type=int, default=32,
                         help="Register data width in bits (default: 32).")
+    parser.add_argument("--bus", default="none", choices=BUS_CHOICES,
+                        help="Bus protocol wrapper to generate: none, apb, ahb, axi (default: none).")
     parser.add_argument("--format", default=None,
                         help=f"Comma-separated list of output formats: {ALL_FORMATS}. "
                              f"Default: all.")
@@ -60,8 +70,11 @@ def main():
                         help="Generate only UVM RAL (shorthand for --format uvm).")
     parser.add_argument("--template_excel", action="store_true",
                         help="Generate a blank Excel template file and exit.")
+    parser.add_argument("--dry_run", action="store_true",
+                        help="Parse and validate only; no file output.")
     parser.add_argument("--verbose", "-v", action="store_true",
                         help="Enable verbose (DEBUG-level) logging output.")
+    parser.add_argument("--version", action="version", version=f"RegPulse {__version__}")
     args = parser.parse_args()
 
     setup_logging(args.verbose)
@@ -107,6 +120,11 @@ def main():
     validator.validate()
     logger.info("Validation passed.")
 
+    # Dry-run: stop after validation
+    if args.dry_run:
+        logger.info("Dry run — no files generated.")
+        return
+
     # 3. Generate outputs
     for fmt in formats:
         if fmt == "rtl":
@@ -134,6 +152,26 @@ def main():
             gen = HtmlGenerator(bank)
             path = gen.generate(args.output_dir)
             logger.info("Written: %s", path)
+        elif fmt == "markdown":
+            logger.info("Generating Markdown documentation ...")
+            gen = MarkdownGenerator(bank)
+            path = gen.generate(args.output_dir)
+            logger.info("Written: %s", path)
+
+    # 4. Generate bus wrapper if requested
+    if args.bus != "none":
+        bus = args.bus
+        if bus == "apb":
+            logger.info("Generating APB4 wrapper ...")
+            wgen = ApbWrapperGenerator(bank)
+        elif bus == "ahb":
+            logger.info("Generating AHB-Lite wrapper ...")
+            wgen = AhbWrapperGenerator(bank)
+        elif bus == "axi":
+            logger.info("Generating AXI4-Lite wrapper ...")
+            wgen = AxiWrapperGenerator(bank)
+        path = wgen.generate(args.output_dir)
+        logger.info("Written: %s", path)
 
     logger.info("Done.")
 

@@ -65,21 +65,26 @@ class RegisterBank:
         """Return matched interrupt (source, src_reg, enable, en_reg) tuples.
 
         Pairs are matched by field name across all registers.
+        Sources and enables are stored in lists so that duplicate field names
+        across different registers are preserved instead of being silently
+        overwritten.
         """
-        sources: dict[str, tuple[Field, Register]] = {}
-        enables: dict[str, tuple[Field, Register]] = {}
+        sources: dict[str, list[tuple[Field, Register]]] = {}
+        enables: dict[str, list[tuple[Field, Register]]] = {}
         for reg in self.registers:
             for field in reg.fields:
                 if field.interrupt_role == "source":
-                    sources[field.name] = (field, reg)
+                    sources.setdefault(field.name, []).append((field, reg))
                 elif field.interrupt_role == "enable":
-                    enables[field.name] = (field, reg)
+                    enables.setdefault(field.name, []).append((field, reg))
 
         pairs = []
-        for name, (src_field, src_reg) in sources.items():
+        for name, src_list in sources.items():
             if name in enables:
-                en_field, en_reg = enables[name]
-                pairs.append((src_field, src_reg, en_field, en_reg))
+                en_list = enables[name]
+                for src_field, src_reg in src_list:
+                    for en_field, en_reg in en_list:
+                        pairs.append((src_field, src_reg, en_field, en_reg))
         return pairs
 
     def __repr__(self):

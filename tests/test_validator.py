@@ -106,6 +106,16 @@ def test_bitfield_collision():
         Validator(bank).validate()
 
 
+def test_field_msb_exceeds_data_width():
+    """A field at bit 33 in a 32-bit register must fail even if field width=1."""
+    bank = RegisterBank("test")
+    reg = Register("MSB_OOB", 0x00)
+    reg.add_field(Field("HI", "33:33", "RW", 0))
+    bank.add_register(reg)
+    with pytest.raises(ValidationError, match="MSB=33"):
+        Validator(bank).validate()
+
+
 # --- Positive tests ---
 
 def test_valid_register():

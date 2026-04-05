@@ -91,6 +91,12 @@ class Validator:
                     f"Register '{reg.name}' spans {reg.width} bits, "
                     f"exceeding the {max_w}-bit limit."
                 )
+            for field in reg.fields:
+                if field.msb >= max_w:
+                    raise ValidationError(
+                        f"Field '{reg.name}.{field.name}' has MSB={field.msb}, "
+                        f"which exceeds the {max_w}-bit data width (max bit index: {max_w - 1})."
+                    )
 
     def _check_uncovered_bits(self) -> None:
         for reg in self.bank.registers:

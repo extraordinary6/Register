@@ -24,28 +24,31 @@ EDA tool to generate bus-agnostic register file cores, optional bus protocol wra
 pip install pandas openpyxl jinja2
 
 # Generate register core + all formats
-python -m src.cli --input_excel spec.xlsx --output_dir ./output
+python main.py --input_excel spec.xlsx --output_dir ./output
 
 # Generate with APB4 bus wrapper
-python -m src.cli --input_excel spec.xlsx --output_dir ./output --bus apb
+python main.py --input_excel spec.xlsx --output_dir ./output --bus apb
 
 # Generate with AHB-Lite bus wrapper
-python -m src.cli --input_excel spec.xlsx --output_dir ./output --bus ahb
+python main.py --input_excel spec.xlsx --output_dir ./output --bus ahb
 
 # Generate with AXI4-Lite bus wrapper
-python -m src.cli --input_excel spec.xlsx --output_dir ./output --bus axi
+python main.py --input_excel spec.xlsx --output_dir ./output --bus axi
 
 # Generate only RTL
-python -m src.cli --input_excel spec.xlsx --output_dir ./output --rtl_only
+python main.py --input_excel spec.xlsx --output_dir ./output --rtl_only
 
 # Select specific formats
-python -m src.cli --input_excel spec.xlsx --output_dir ./output --format rtl,uvm,c_header
+python main.py --input_excel spec.xlsx --output_dir ./output --format rtl,uvm,c_header
+
+# Parse and validate only (no file output)
+python main.py --input_excel spec.xlsx --output_dir ./output --dry_run
 
 # Generate a blank template Excel
-python -m src.cli --input_excel template.xlsx --output_dir ./output --template_excel
+python main.py --input_excel template.xlsx --output_dir ./output --template_excel
 ```
 
-## Architecture (v0.5.0)
+## Architecture (v0.6.0)
 
 RegPulse decouples register logic from bus protocol into two layers:
 
@@ -121,7 +124,7 @@ The `output/` directory contains a sample `chip_regs` register bank generated fr
 ## CLI Reference
 
 ```
-python -m src.cli --input_excel <file> --output_dir <dir> [options]
+python main.py --input_excel <file> --output_dir <dir> [options]
 
 Required:
   --input_excel FILE     Input .xlsx register specification
@@ -151,8 +154,8 @@ Register/
 │   ├── validators/      # 9 validation checks
 │   ├── generators/      # RTL, APB/AHB/AXI wrappers, UVM, C header, JSON, Markdown, HTML
 │   ├── templates/       # Jinja2 templates (regfile_core.v.j2, apb_wrapper.v.j2, etc.)
-│   └── cli.py           # Command-line interface
-├── tests/               # Test suite (pytest, 88 tests)
+├── main.py              # Command-line interface
+├── tests/               # Test suite (pytest, 90 tests)
 ├── output/              # Example generated output (chip_regs)
 └── pyproject.toml
 ```

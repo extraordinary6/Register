@@ -66,9 +66,11 @@ def test_axi_handshake_logic(sample_bank):
             code = f.read()
 
     assert "awaddr_sel" in code
+    assert "awaddr_reg" in code
     assert "wdata_sel" in code
     assert "bvalid_reg" in code
     assert "ar_sel" in code
+    assert "araddr_reg" in code
     assert "rvalid_reg" in code
 
 
@@ -132,6 +134,19 @@ def test_module_name(sample_bank):
             code = f.read()
 
     assert "module test_top_axi_wrapper" in code
+
+
+def test_read_uses_araddr(sample_bank):
+    gen = AxiWrapperGenerator(sample_bank)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = gen.generate(tmpdir)
+        with open(path) as f:
+            code = f.read()
+
+    # core_addr must mux between awaddr_reg and araddr_reg
+    assert "araddr_reg" in code
+    assert "awaddr_reg" in code
+    assert "core_wen ? awaddr_reg" in code
 
 
 def test_axi_data_width_64():
