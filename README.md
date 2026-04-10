@@ -17,19 +17,29 @@ RegPulse generates bus-agnostic register file cores, optional bus protocol wrapp
 
 ## Installation
 
-### Run from a source checkout
-
-```bash
-pip install pandas openpyxl jinja2 pytest
-python main.py --help
-```
-
-### Install the CLI
+### Install from a source checkout
 
 ```bash
 pip install .
 regpulse --help
 ```
+
+This installs runtime dependencies from `pyproject.toml` and exposes the `regpulse` CLI.
+
+### Editable install for development
+
+```bash
+pip install -e ".[dev]"
+pytest tests/ -v
+```
+
+### Run the repo entrypoint directly
+
+```bash
+python main.py --help
+```
+
+`main.py` is a thin wrapper around the same CLI implementation used by `regpulse`.
 
 ## Quick Start
 
@@ -59,6 +69,7 @@ python main.py --output_dir ./output --template_excel
 ```
 
 You can replace `python main.py` with `regpulse` after installation.
+The output directory is user-chosen; `./output` in the examples is only a sample location for generated artifacts.
 
 ## Architecture
 
@@ -151,9 +162,11 @@ Register/
 │   └── templates/       # Jinja2 templates packaged with the CLI
 ├── main.py              # Command-line entrypoint
 ├── tests/               # Pytest test suite
-├── output/              # Example generated output
+├── README.md
 └── pyproject.toml
 ```
+
+Generated artifacts are written to a user-specified directory such as `./output/`; treat that directory as build output rather than project source.
 
 ## Running Tests
 

@@ -84,6 +84,19 @@ def test_bus_auto_includes_rtl(monkeypatch, sample_excel, tmp_path):
 
 def test_readme_examples_match_current_cli_contract():
     readme = (Path(__file__).resolve().parents[1] / "README.md").read_text(encoding="utf-8")
+    assert "pip install ." in readme
+    assert "regpulse --help" in readme
+    assert "pip install -e \".[dev]\"" in readme
+    assert "python main.py --help" in readme
     assert "python main.py --output_dir ./output --template_excel" in readme
+    assert "python main.py --input_excel spec.xlsx --output_dir ./output --format rtl,uvm,c_header" in readme
+    assert "python main.py --input_excel spec.xlsx --output_dir ./output --dry_run" in readme
+    assert "python main.py --input_excel spec.xlsx --output_dir ./output --lint" in readme
+    assert "python main.py --input_excel spec.xlsx --output_dir ./output --format uvm,json --bus apb" in readme
     assert "auto-includes rtl" in readme
     assert "Required unless --template_excel is used" in readme
+    assert "--bus {none,apb,ahb,axi}" in readme
+    assert "--format FMTS             Comma-separated formats: rtl,uvm,c_header,json,html,markdown" in readme
+    assert "The output directory is user-chosen; `./output` in the examples is only a sample location for generated artifacts." in readme
+    assert "Generated artifacts are written to a user-specified directory such as `./output/`; treat that directory as build output rather than project source." in readme
+    assert "├── output/" not in readme

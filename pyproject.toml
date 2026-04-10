@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "regpulse"
-version = "0.7.0"
+dynamic = ["version"]
 description = "Generate synthesizable Verilog register banks and UVM RAL models from Excel specs"
 readme = "README.md"
 license = {text = "MIT"}
@@ -34,6 +34,9 @@ dev = ["pytest>=7.4"]
 
 [project.scripts]
 regpulse = "src.cli:run"
+
+[tool.setuptools.dynamic]
+version = {attr = "src.__version__"}
 
 [tool.setuptools.packages.find]
 include = ["src*"]
