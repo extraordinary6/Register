@@ -54,6 +54,7 @@ class HtmlGenerator:
         lines.append("<body>")
         lines.append(f"  <h1>{esc(self.bank.name)} &mdash; Register Map</h1>")
         lines.append(f"  <p>Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} "
+                     f"| Base Address: 0x{self.bank.base_address:08X} "
                      f"| Registers: {self.bank.num_registers} | "
                      f"Address Space: {self.bank.address_space} bytes</p>")
         lines.append("")

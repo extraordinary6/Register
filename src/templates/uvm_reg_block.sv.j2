@@ -44,7 +44,7 @@ class {{ block_name }}_reg_block extends uvm_reg_block;
     // ========================================================================
     function void set_default_map(uvm_reg_map map);
         this.default_map = map;
-        this.default_map.set_base_addr('h0);
+        this.default_map.set_base_addr('h{{ base_address_hex }});
 {% for reg in registers %}
         this.default_map.add_reg({{ reg.name }}, {{ address_literal_width }}'h{{ address_hex_format | format(reg.offset) }}, "{{ reg.effective_access }}");
 {% endfor %}

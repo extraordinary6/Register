@@ -43,6 +43,7 @@ class UvmGenerator:
             data_width=self.bank.data_width,
             address_literal_width=address_literal_width,
             address_hex_format=f"%0{address_hex_digits}X",
+            base_address_hex=f"{self.bank.base_address:X}",
             timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         )
 

@@ -77,3 +77,15 @@ def test_html_em_dash(sample_bank):
             code = f.read()
 
     assert "&mdash;" in code
+
+
+def test_html_base_address_displayed(sample_bank):
+    """The bank's base address should appear in the HTML header."""
+    sample_bank.base_address = 0x40001000
+    gen = HtmlGenerator(sample_bank)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = gen.generate(tmpdir)
+        with open(path) as f:
+            code = f.read()
+
+    assert "Base Address: 0x40001000" in code

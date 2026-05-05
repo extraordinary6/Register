@@ -119,3 +119,27 @@ def test_uvm_include_guard(sample_bank):
 
     assert "`ifndef TEST_TOP_REG_BLOCK_SV" in code
     assert "`endif // TEST_TOP_REG_BLOCK_SV" in code
+
+
+def test_uvm_default_base_addr_zero(sample_bank):
+    """When base_address is 0 (default), set_base_addr should emit 'h0."""
+    gen = UvmGenerator(sample_bank)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = gen.generate(tmpdir)
+        with open(path) as f:
+            code = f.read()
+
+    assert "set_base_addr('h0)" in code
+
+
+def test_uvm_nonzero_base_addr_propagated(sample_bank):
+    """A user-supplied base_address must reach the generated UVM RAL."""
+    sample_bank.base_address = 0x40001000
+    gen = UvmGenerator(sample_bank)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = gen.generate(tmpdir)
+        with open(path) as f:
+            code = f.read()
+
+    assert "set_base_addr('h40001000)" in code
+    assert "set_base_addr('h0)" not in code

@@ -119,6 +119,20 @@ Fully blank rows are skipped.
 | `{name}.md` | `markdown` format | Markdown documentation |
 | `{name}.html` | `html` format | HTML documentation |
 
+## Base Address Handling
+
+`--base_address` reflects where the IP sits in the SoC memory map. RegPulse follows the industry convention that **base address is a software / verification / documentation concept, not an RTL concept**:
+
+| Output | Uses `base_address` | Notes |
+|--------|---------------------|-------|
+| C header | yes | Emits `#define <BLOCK>_BASE` and `<BLOCK>_<REG>_ADDR = BASE + offset` |
+| JSON IR | yes | Top-level `base_address` field |
+| Markdown / HTML | yes | Shown in the document header |
+| UVM RAL | yes | `set_base_addr('h<base>)` so testbench transactions reach the right slave |
+| RTL core / bus wrappers | **no** | Slaves decode local offsets only; the SoC bus decoder (`psel`/`hsel`/AXI interconnect) consumes the base address upstream |
+
+This keeps the generated IP relocatable and consistent with how APB / AHB-Lite / AXI4-Lite slaves are expected to behave.
+
 ## CLI Reference
 
 Use either form:
